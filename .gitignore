@@ -1,0 +1,13 @@
+.dmypy.json
+.idea/
+*.pyc
+venv/
+.run/
+results/
+*.DS_STORE
+.vscode/
+env
+plots/
+weights/
+resources/arenas/generated_*.gupb
+__pycache__/

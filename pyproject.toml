@@ -1,0 +1,45 @@
+[project]
+name = "rl-labs"
+version = "1.0.0"
+description = ""
+authors = [
+    {name = "Łukasz Kwinta (lkwinta)", email = "lukaszmind@gmail.com"}
+]
+readme = "README.md"
+
+requires-python = "==3.11.4"
+
+dependencies = [
+    "bresenham==0.2.1",
+    "click==8.1.7",
+    "dataclasses-json==0.6.1",
+    "gymnasium[box2d]==1.2.3",
+    "stable-baselines3[extra]",
+    "matplotlib",
+    "networkx==3.2.1",
+    "numpy==1.26.0",
+    "pathfinding==1.0.4",
+    "perlin-noise==1.12",
+    "pygame==2.5.2",
+    "python-statemachine==2.1.1",
+    "questionary==2.0.1",
+    "scikit-guess==0.0.1a0",
+    "scikit-image~=0.25.2",
+    "scikit-learn==1.5.0",
+    "scipy==1.11.4",
+    "sortedcontainers==2.4.0",
+    "tqdm==4.66.3",
+    "torch~=2.6.0",
+    "parse",
+]
+
+[dependency-groups]
+dev = [
+    "pre-commit",
+    "ruff"
+]
+
+[tool.ruff.lint]
+ignore = [
+    "E731",  # lambda expressions
+]

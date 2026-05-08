@@ -1,0 +1,16 @@
+red_params,blue_params,winner,red_won,game_length,red_wins,blue_wins
+"(0.2, 0.5)","(0.2, 1.0)",Colour.BLUE,False,26,32,18
+"(0.2, 0.5)","(0.5, 1.0)",Colour.RED,True,29,25,25
+"(0.2, 1.0)","(0.5, 1.0)",Colour.BLUE,False,12,21,29
+"(0.5, 0.5)","(0.2, 1.0)",Colour.RED,True,19,31,19
+"(0.2, 0.5)","(0.5, 0.5)",Colour.BLUE,False,28,26,24
+"(0.5, 0.5)","(0.5, 1.0)",Colour.RED,True,21,28,22
+"(0.2, 1.0)","(1.0, 1.0)",Colour.RED,True,25,20,30
+"(0.2, 0.5)","(1.0, 1.0)",Colour.BLUE,False,20,15,35
+"(0.2, 0.5)","(1.0, 0.5)",Colour.BLUE,False,30,7,43
+"(1.0, 0.5)","(0.2, 1.0)",Colour.RED,True,33,42,8
+"(1.0, 0.5)","(0.5, 1.0)",Colour.RED,True,29,38,12
+"(0.5, 1.0)","(1.0, 1.0)",Colour.RED,True,31,20,30
+"(0.5, 0.5)","(1.0, 1.0)",Colour.RED,True,19,24,26
+"(0.5, 0.5)","(1.0, 0.5)",Colour.BLUE,False,34,17,33
+"(1.0, 0.5)","(1.0, 1.0)",Colour.RED,True,31,31,19
