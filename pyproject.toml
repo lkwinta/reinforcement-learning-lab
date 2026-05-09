@@ -28,9 +28,10 @@ dependencies = [
     "scikit-learn==1.5.0",
     "scipy==1.11.4",
     "sortedcontainers==2.4.0",
-    "tqdm==4.66.3",
+    "tqdm==4.67.3",
     "torch~=2.6.0",
     "parse",
+    "keras==3.14.0",
 ]
 
 [dependency-groups]
