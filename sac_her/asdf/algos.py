@@ -8,7 +8,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from torch.optim import Adam
-from tqdm import trange
+from tqdm.rich import trange
 
 from .buffers import BaseBuffer
 from .loggers import BaseLogger
@@ -130,6 +130,8 @@ class SAC:
         # Entropy coefficient / Entropy temperature
         # Inverse of the reward scale
         self.alpha = alpha
+        self.log_alpha = None
+        self.alpha_optimizer = None
         # TODO: fill this in
         # Additional properties for automatic alpha adjustment...
 
@@ -192,8 +194,13 @@ class SAC:
             # as discussed in https://github.com/rail-berkeley/softlearning/issues/37
 
             # TODO: fill this in
-            # self.alpha = ...
-            # self.alpha_optimizer = ...
+            self.log_alpha = torch.tensor(
+                np.log(init_value), 
+                dtype=torch.float32, 
+                device=alpha_device, 
+                requires_grad=True)
+            self.alpha_optimizer = Adam([self.log_alpha], lr=lr)
+            self.alpha = self.log_alpha.exp().detach()
         else:
             # Force conversion to float
             # this will throw an error if a malformed string (different from 'auto') is passed
@@ -259,8 +266,9 @@ class SAC:
         # so we don't change it with other losses
         # see https://github.com/rail-berkeley/softlearning/issues/60
         # TODO: fill this in
-        alpha_loss = 0
-        alpha = 0
+        alpha_loss = -(self.log_alpha * (logp_pi.detach() + self.target_entropy)).mean()
+        alpha = self.log_alpha.exp()
+
         return alpha_loss, alpha
         # Remember to use target_entropy
 
@@ -301,22 +309,29 @@ class SAC:
         # entropy temperature or alpha in the paper
         if self.alpha_optimizer is not None:
             alpha_loss, alpha = self.compute_loss_alpha(logp_pi)
+
             # TODO: fill this in
             # Update alpha...
+            self.alpha_optimizer.zero_grad()
+            alpha_loss.backward()
+            self.alpha_optimizer.step()
+
+            self.alpha = self.log_alpha.exp().detach()
         else:
-            alpha_loss = np.array(0)
+            alpha_loss = torch.tensor(0.0, device=self.alpha.device)
 
         return {
             "q": loss_q.item(),
             "pi": loss_pi.item(),
-            "alpha": alpha_loss.item(),
+            "alpha": alpha_loss.cpu().item(),
         }
 
     def test(
         self,
         env: gym.Env,
         n_episodes: int,
-        sleep: float = 0,
+        episode_sleep: float = 0,
+        render_sleep: float = 0,
         store_experience: bool = False,
         render: bool = False,
         up_to_buffer_size=False,
@@ -329,62 +344,66 @@ class SAC:
         if render:
             frames = []
 
-        for _ in range(n_episodes):
-            (o, i), d, ep_ret, ep_len = env.reset(), False, 0, 0
+        with trange(n_episodes) as prgs:
+            for _ in prgs:
+                (o, i), d, ep_ret, ep_len = env.reset(), False, 0, 0
 
-            if store_experience:
-                self.buffer.start_episode()
-
-            if render:
-                frames.append([])
-
-            while not (d or (ep_len == self.max_episode_len)):
-                # Take deterministic actions at test time
-                a = self.policy.act(o, True)
-
-                o2, r, ter, tru, i = env.step(a)
+                if episode_sleep > 0:
+                    time.sleep(episode_sleep) 
 
                 if store_experience:
-                    # Store experience to replay buffer
-                    self.buffer.store(o, a, r, o2, ter, tru, i)
-
-                o = o2
+                    self.buffer.start_episode()
 
                 if render:
-                    frame = env.render()
-                    frames[-1].append(frame)
+                    frames.append([])
 
-                if sleep > 0:
-                    time.sleep(sleep)
+                while not (d or (ep_len == self.max_episode_len)):
+                    # Take deterministic actions at test time
+                    a = self.policy.act(o, True)
 
-                d = ter or tru
-                ep_ret += r
-                ep_len += 1
+                    o2, r, ter, tru, i = env.step(a)
 
-            if store_experience:
-                self.buffer.end_episode()
+                    if store_experience:
+                        # Store experience to replay buffer
+                        self.buffer.store(o, a, r, o2, ter, tru, i)
 
-            ep_returns.append(ep_ret)
-            ep_lengths.append(ep_len)
+                    o = o2
 
-            if "is_success" in i:
-                ep_successes.append(i["is_success"])
+                    if render:
+                        frame = env.render()
+                        frames[-1].append(frame)
 
-            if up_to_buffer_size and self.buffer.size == self.buffer.max_size:
-                break
+                    if render_sleep > 0:
+                        time.sleep(render_sleep)
 
-        results = {
-            "mean_ep_ret": np.array(ep_returns).mean(),
-            "mean_ep_len": np.array(ep_lengths).mean(),
-        }
+                    d = ter or tru
+                    ep_ret += r
+                    ep_len += 1
 
-        if len(ep_successes) > 0:
-            results["success_rate"] = np.array(ep_successes).mean()
+                if store_experience:
+                    self.buffer.end_episode()
 
-        if render:
-            results["ep_frames"] = frames
+                ep_returns.append(ep_ret)
+                ep_lengths.append(ep_len)
 
-        return results
+                if "is_success" in i:
+                    ep_successes.append(i["is_success"])
+
+                if up_to_buffer_size and self.buffer.size == self.buffer.max_size:
+                    break
+
+            results = {
+                "mean_ep_ret": np.array(ep_returns).mean(),
+                "mean_ep_len": np.array(ep_lengths).mean(),
+            }
+
+            if len(ep_successes) > 0:
+                results["success_rate"] = np.array(ep_successes).mean()
+
+            if render:
+                results["ep_frames"] = frames
+
+            return results
 
 
     def train(self, n_steps, log_interval=1000, callbacks=[]):
@@ -432,7 +451,7 @@ class SAC:
                         self.logger.log_scalar("loss_q", losses["q"], t)
                         self.logger.log_scalar("loss_pi", losses["pi"], t)
                         self.logger.log_scalar("loss_alpha", losses["alpha"], t)
-                        self.logger.log_scalar("alpha", self.alpha, t)
+                        self.logger.log_scalar("alpha", self.alpha.item(), t)
 
                 # End of epoch handling
                 if t % log_interval == 0:
@@ -463,7 +482,8 @@ class SAC:
                 "pi_optimizer_state_dict": self.pi_optimizer.state_dict(),
                 "q_optimizer_state_dict": self.q_optimizer.state_dict(),
                 # TODO: fill this in
-                # "alpha_optimizer_state_dict": ...,
+                "alpha_optimizer_state_dict": self.alpha_optimizer.state_dict() if self.alpha_optimizer is not None else None,
+                "log_alpha": self.log_alpha.detach() if self.log_alpha is not None else None,
             },
             path,
         )
@@ -476,3 +496,11 @@ class SAC:
         self.alpha = checkpoint["alpha"]
         # TODO: fill this in
         # self.alpha_optimizer = ...
+
+        if checkpoint["log_alpha"] is not None and checkpoint["alpha_optimizer_state_dict"] is not None:
+            self.log_alpha = torch.tensor(checkpoint["log_alpha"], device=self.alpha.device, requires_grad=True) 
+            self.alpha_optimizer = Adam([self.log_alpha], lr=self.pi_optimizer.param_groups[0]['lr'])
+            self.alpha_optimizer.load_state_dict(checkpoint["alpha_optimizer_state_dict"])
+        else:
+            self.log_alpha = None
+            self.alpha_optimizer = None

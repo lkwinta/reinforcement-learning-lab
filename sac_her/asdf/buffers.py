@@ -154,11 +154,96 @@ class HerReplayBuffer(DictReplayBuffer):
         self.env = env
         self.n_sampled_goal = n_sampled_goal
         self.selection_strategy = goal_selection_strategy
-        # TODO: fill this in
-        # You can put additional attributes here if needed.
-        # Also: There is a number of methods in the base class that could be useful to override.
 
-   
+        self.current_episode = []
+
+    def _sample_goal(self, transition_idx: int) -> dict[str, Any]:
+        if self.selection_strategy == "final":
+            goal = self.current_episode[-1]["next_observation"]["achieved_goal"]
+        elif self.selection_strategy == "future":
+            future_transitions = self.current_episode[transition_idx + 1:]
+            if len(future_transitions) > 0:
+                future_transition_idx = np.random.randint(len(future_transitions))
+                future_transition = future_transitions[future_transition_idx]
+                goal = future_transition["next_observation"]["achieved_goal"]
+            else:
+                goal = self.current_episode[-1]["next_observation"]["achieved_goal"]
+        elif self.selection_strategy == "episode":
+            episode_transitions = self.current_episode
+            random_transition_idx = np.random.randint(len(episode_transitions))
+            random_transition = episode_transitions[random_transition_idx]
+            goal = random_transition["next_observation"]["achieved_goal"]
+        else:
+            raise ValueError(f"Invalid goal selection strategy: {self.selection_strategy}")
+        
+        return goal
+    
+    # compute distance from https://github.com/qgallouedec/panda-gym/blob/master/panda_gym/utils.py#L4
+    @staticmethod
+    def _distance(a: np.ndarray, b: np.ndarray) -> np.ndarray:
+        """Compute the distance between two array. This function is vectorized.
+
+        Args:
+            a (np.ndarray): First array.
+            b (np.ndarray): Second array.
+
+        Returns:
+            np.ndarray: The distance between the arrays.
+        """
+        assert a.shape == b.shape
+        dist = np.linalg.norm(a - b, axis=-1)
+        # round at 1e-6 (ensure determinism and avoid numerical noise)
+        return np.round(dist, 6)
+    
+    # Compute reward from https://github.com/qgallouedec/panda-gym/blob/master/panda_gym/envs/tasks/reach.py#L59
+    def _compute_reward(self, achieved_goal: np.ndarray, desired_goal: np.ndarray, info: dict[str, Any] = {}, sparse=True) -> np.ndarray:
+        d = HerReplayBuffer._distance(achieved_goal, desired_goal)
+        if sparse:
+            # TODO: make the threshold global const
+            return -np.array(d > 0.05, dtype=np.float32)
+        else:
+            return -d.astype(np.float32)
+             
+    def start_episode(self):
+        self.current_episode = []
+
+    def end_episode(self):
+        for transition_idx, transition in enumerate(self.current_episode):
+            super().store(
+                observation=transition["observation"],
+                action=transition["action"],
+                reward=transition["reward"],
+                next_observation=transition["next_observation"],
+                terminated=transition["terminated"],
+                truncated=transition["truncated"],
+                info=transition["info"],
+            )
+
+            for _ in range(self.n_sampled_goal):
+                goal = self._sample_goal(transition_idx)
+                
+                new_observation = transition["observation"].copy()
+                new_observation["desired_goal"] = goal
+                new_next_observation = transition["next_observation"].copy()
+                new_next_observation["desired_goal"] = goal
+
+                new_reward = self._compute_reward(
+                    achieved_goal=new_next_observation["achieved_goal"],
+                    desired_goal=goal,
+                    info=transition["info"],
+                )
+                super().store(
+                    observation=new_observation,
+                    action=transition["action"],
+                    reward=new_reward,
+                    next_observation=new_next_observation,
+                    terminated=transition["terminated"],
+                    truncated=transition["truncated"],
+                    info=transition["info"],
+                )
+
+        self.current_episode = []
+
     def store(
         self,
         observation: dict[str, torch.Tensor],
@@ -169,26 +254,15 @@ class HerReplayBuffer(DictReplayBuffer):
         truncated: bool,
         info: dict[str, Any],
     ):
-        # TODO: fill this in
-        # Just a suggestion: it may make sense to modify this method
-        
-        # Store the transition
-        super().store(
-            observation=observation,
-            action=action,
-            reward=reward,
-            next_observation=next_observation,
-            terminated=terminated,
-            truncated=truncated,
-            info=info,
-        )
+        self.current_episode.append({
+            "observation": observation,
+            "action": action,
+            "reward": reward,
+            "next_observation": next_observation,
+            "terminated": terminated,
+            "truncated": truncated,
+            "info": info,
+        })
 
-        # TODO: fill this in
-        # Or maybe here?
-
-
-
-
-
-
-
+        # if terminated or truncated:
+        #     self.end_episode()
