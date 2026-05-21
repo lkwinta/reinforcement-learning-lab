@@ -99,7 +99,16 @@ Niestety na takich samych ustawieniach jak dla PandaPush-v3, model nie był w st
 
 <img src="raport_imgs/pick_milion_steps_return.png" alt="Pick HER Future Auto Alpha test return" width="400"/>
 
-Widać jakąś tendencję ale raczej wygląda na słaby wynik jak na 4h nauki. Spróbowałem dodać też dodatkową warstwę ukrytą do sieci ale ... TBD.
+Widać jakąś tendencję ale raczej wygląda na słaby wynik jak na 4h nauki. Spróbowałem dodać też dodatkową warstwę ukrytą do sieci ale nie pomogło. 
+
+<img src="raport_imgs/pick_milion_step_return_256.png" alt="Pick HER Future Auto Alpha 256 test return" width="400"/>
+
+Zdecydowałem się zostawić eksperyment na $3 000 000$ kroków treningu i udało się nawet coś nauczyć, ale jakim kosztem... 14h treningu... Problem spowodowałem
+przypadkiem bo zamiast tensorboarda podpiąłem swój skrypt do logowania, żeby mieć logi w jsonie, ale że bardzo na szybko to było, to zrobiłem naiwne zachowanie w pamięci,
+i dump do pliku co $N$ wpisów (wpisów a nie kroków treningowych). Jak się okazało, po 3 milionach kroków treningu, wyjściowy plik ważył około 1.2GB, a jego dump trwał jakoś
+minutę, więc średnio co 5k iteracji treninogwych miałem 1 minutę przerwy co sporo wydłużyło trening.
+
+<img src="raport_imgs/pick_3milion_step_return.png" alt="Pick HER Future Auto Alpha 256 test return" width="400"/>
 
 # Nagrania
 

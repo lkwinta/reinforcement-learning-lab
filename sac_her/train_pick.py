@@ -154,7 +154,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     config = {
-        "env": "PandaPick-v3",
+        "env": "PandaPickAndPlace-v3",
         "load": args.load,
         "render": args.render,
         "logs_dir": args.logs_dir,
