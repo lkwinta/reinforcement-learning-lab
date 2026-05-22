@@ -2,7 +2,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from itertools import accumulate
-from bandits import *
+from bandits.bandits import (
+    KArmedBandit,
+    TopHitBandit,
+    BanditLearner,
+    ExploreThenCommitLearner,
+    EGreedyLearner,
+    UCB1Learner,
+    GradientLearner,
+)
+
 
 class BanditProblem:
     def __init__(self, time_steps: int, bandit: KArmedBandit, learner: BanditLearner):
@@ -32,17 +41,17 @@ POTENTIAL_HITS = {
 TIME_STEPS = 1000
 TRIALS_PER_LEARNER = 50
 
+
 def random_potential_hits(k: int = 5) -> dict[str, float]:
     probabilities = np.random.random(k)
-    return {
-        f"Song {i}": p
-        for i, p in enumerate(probabilities)
-    }
+    return {f"Song {i}": p for i, p in enumerate(probabilities)}
+
 
 def regret_calculation(rewards_matrix, optimal_rewards_matrix):
     regrets = np.cumsum(optimal_rewards_matrix - rewards_matrix, axis=1)
     mean_regret = np.mean(regrets, axis=0)
     return mean_regret
+
 
 def evaluate_learner_regret(learner: BanditLearner) -> None:
     all_rewards = []
@@ -60,12 +69,13 @@ def evaluate_learner_regret(learner: BanditLearner) -> None:
 
         all_rewards.append(rewards)
         all_optimal_rewards.append(optimal_rewards)
-    
+
     all_rewards = np.array(all_rewards)
     all_optimal_rewards = np.array(all_optimal_rewards)
 
     mean_regret = regret_calculation(all_rewards, all_optimal_rewards)
     plt.plot(mean_regret, label=learner.name, color=learner.color)
+
 
 def evaluate_learner(learner: BanditLearner) -> None:
     runs_results = []
@@ -80,8 +90,11 @@ def evaluate_learner(learner: BanditLearner) -> None:
     mean_accumulated_rewards = np.mean(runs_results, axis=0)
     plt.plot(mean_accumulated_rewards, label=learner.name, color=learner.color)
 
-def save_plot(path: str, title: str, y_lim: bool = True, y_label: str = 'Suma uzyskanych nagród') -> None:
-    plt.xlabel('Czas')
+
+def save_plot(
+    path: str, title: str, y_lim: bool = True, y_label: str = "Suma uzyskanych nagród"
+) -> None:
+    plt.xlabel("Czas")
     plt.ylabel(y_label)
     plt.xlim(0, TIME_STEPS)
     if y_lim:
@@ -89,6 +102,7 @@ def save_plot(path: str, title: str, y_lim: bool = True, y_label: str = 'Suma uz
     plt.legend()
     plt.title(title)
     plt.savefig(path)
+
 
 explore_then_commit_grid = {
     "m": [1, 5, 10, 20],
@@ -103,7 +117,18 @@ gradient_grid = {
     "lr": [0.1, 0.2, 0.3, 0.4, 0.5, 0.8],
 }
 
-colors = ["green", "red", "blue", "yellow", "cyan", "magenta", "orange", "purple", "pink"]
+colors = [
+    "green",
+    "red",
+    "blue",
+    "yellow",
+    "cyan",
+    "magenta",
+    "orange",
+    "purple",
+    "pink",
+]
+
 
 def parametric_study():
     learners = [
@@ -123,7 +148,11 @@ def parametric_study():
                 evaluate_learner(learner)
                 idx += 1
 
-        save_plot(f"plots/{learner_class.__name__.lower()}.png", f"{learner_class.__name__}", y_lim=True)
+        save_plot(
+            f"plots/{learner_class.__name__.lower()}.png",
+            f"{learner_class.__name__}",
+            y_lim=True,
+        )
 
         plt.clf()
         idx = 0
@@ -134,10 +163,17 @@ def parametric_study():
                 evaluate_learner_regret(learner)
                 idx += 1
 
-        save_plot(f"plots/{learner_class.__name__.lower()}_regret.png", f"{learner_class.__name__} - Regret", y_lim=False, y_label='Regret')
+        save_plot(
+            f"plots/{learner_class.__name__.lower()}_regret.png",
+            f"{learner_class.__name__} - Regret",
+            y_lim=False,
+            y_label="Regret",
+        )
+
 
 def main():
     parametric_study()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

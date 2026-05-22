@@ -74,9 +74,7 @@ def q_update(
     if key in q:
         old_value = q[key]
 
-    q[key] = old_value + step_size * return_value_weight * (
-        return_value - old_value
-    )
+    q[key] = old_value + step_size * return_value_weight * (return_value - old_value)
 
 
 @njit(cache=True)
@@ -192,10 +190,9 @@ def epsilon_greedy_probabilities_jit(
     probabilities = np.empty(actions.shape[0], dtype=np.float64)
 
     for i in range(actions.shape[0]):
-        probabilities[i] = (
-            (1.0 - experiment_rate) * greedy[i]
-            + experiment_rate * random_policy[i]
-        )
+        probabilities[i] = (1.0 - experiment_rate) * greedy[
+            i
+        ] + experiment_rate * random_policy[i]
 
     return normalise_jit(probabilities)
 
@@ -291,7 +288,7 @@ def return_value_jit(
     for i in range(update_step + 1, end + 1):
         index = i % (step_no + 1)
         power = i - update_step - 1
-        return_value += (discount_factor ** power) * rewards[index]
+        return_value += (discount_factor**power) * rewards[index]
 
     if update_step + step_no < final_step:
         index = (update_step + step_no) % (step_no + 1)
@@ -307,7 +304,7 @@ def return_value_jit(
             actions[index, 1],
         )
 
-        return_value += (discount_factor ** step_no) * q_get(q, state, action)
+        return_value += (discount_factor**step_no) * q_get(q, state, action)
 
     return return_value
 

@@ -10,11 +10,12 @@ import pandas as pd
 
 from multiprocessing import Pool
 
-class Colour(Enum):
-    RED = 'R'
-    BLUE = 'B'
 
-    def flip(self) -> 'Colour':
+class Colour(Enum):
+    RED = "R"
+    BLUE = "B"
+
+    def flip(self) -> "Colour":
         return Colour.RED if self == Colour.BLUE else Colour.BLUE
 
 
@@ -30,14 +31,20 @@ class Board:
     def _prepare_board(self):
         for i in range(self.width):
             for j in range(self.height):
-                self.positions[(i, j)] = '.'
+                self.positions[(i, j)] = "."
 
     def __str__(self):
-        representation = '\\ ' + ' '.join([str(i + 1) for i in range(self.width)]) + '\n'
+        representation = (
+            "\\ " + " ".join([str(i + 1) for i in range(self.width)]) + "\n"
+        )
         for j in range(self.height):
-            representation += (chr(ord('A') + j) + ' ' + ' '.join([self.positions[i, j] for i in range(self.width)]))
+            representation += (
+                chr(ord("A") + j)
+                + " "
+                + " ".join([self.positions[i, j] for i in range(self.width)])
+            )
             if j < self.height - 1:
-                representation += '\n'
+                representation += "\n"
         return representation
 
     def moves_for(self, current_player: Colour) -> list[tuple[int, int]]:
@@ -45,7 +52,7 @@ class Board:
         player_position = self._player_position(current_player)
         if player_position is None:
             for position in self.positions:
-                if self.positions[position] == '.':
+                if self.positions[position] == ".":
                     result.append(position)
         else:
             directions = list(itertools.product([-1, 0, 1], repeat=2))
@@ -55,7 +62,7 @@ class Board:
                 px, py = px + dx, py + dy
                 while 0 <= px < self.width and 0 <= py < self.height:
                     potential_position = px, py
-                    if self.positions[potential_position] == '.':
+                    if self.positions[potential_position] == ".":
                         result.append(potential_position)
                         px, py = px + dx, py + dy
                     else:
@@ -65,14 +72,16 @@ class Board:
     def apply_move(self, current_player: Colour, move: tuple[int, int]) -> None:
         player_position = self._player_position(current_player)
         if player_position is not None:
-            self.positions[player_position] = '#'
+            self.positions[player_position] = "#"
         self.positions[move] = current_player.value
         self._update_player_position(current_player, move)
 
     def _player_position(self, current_player: Colour) -> tuple[int, int]:
         return self.red_position if current_player == Colour.RED else self.blue_position
 
-    def _update_player_position(self, current_player: Colour, new_position: tuple[int, int]) -> None:
+    def _update_player_position(
+        self, current_player: Colour, new_position: tuple[int, int]
+    ) -> None:
         if current_player == Colour.RED:
             self.red_position = new_position
         else:
@@ -86,8 +95,8 @@ class Board:
         return f"{self.width}_{self.height}_{''.join(positions_in_order)}"
 
     @staticmethod
-    def from_state_str(state_str: str) -> 'Board':
-        width, height, positions = state_str.split('_')
+    def from_state_str(state_str: str) -> "Board":
+        width, height, positions = state_str.split("_")
         width, height = int(width), int(height)
         board = Board(width, height)
         for j in range(height):
@@ -100,7 +109,7 @@ class Board:
                     board.blue_position = (i, j)
         return board
 
-    def duplicate(self) -> 'Board':
+    def duplicate(self) -> "Board":
         return self.from_state_str(self.to_state_str())
 
 
@@ -126,7 +135,13 @@ class Game:
     #     * zarówno pionek innego gracza jak i zablokowane pola uniemożliwiają dalszy ruch (nie da się ich przeskoczyć)
     #  * jeżeli gracz musi wykonać ruch pionkiem, a nie jest to możliwe (każdy z ośmiu kierunków zablokowany)...
     #  * ...to taki gracz przegrywa (a jego przeciwnik wygrywa ;])
-    def __init__(self, red: Player, blue: Player, board: Board, current_player: Colour = Colour.RED):
+    def __init__(
+        self,
+        red: Player,
+        blue: Player,
+        board: Board,
+        current_player: Colour = Colour.RED,
+    ):
         self.red: Player = red
         self.blue: Player = blue
         self.board: Board = board
@@ -144,7 +159,9 @@ class Game:
             legal_moves = self.board.moves_for(self.current_player)
             if len(legal_moves) == 0:
                 self.finished = True
-                self.winner = Colour.BLUE if self.current_player == Colour.RED else Colour.RED
+                self.winner = (
+                    Colour.BLUE if self.current_player == Colour.RED else Colour.RED
+                )
                 break
 
             player = self.red if self.current_player == Colour.RED else self.blue
@@ -202,17 +219,21 @@ class MCTSNode:
             max_count = max(counts.values())
             best_moves = [move for move in self.children if counts[move] == max_count]
             best_move = random.choice(best_moves)
-            
+
         else:
             weights = {}
             for move, child in self.children.items():
                 if child.times_chosen == 0:
-                    weights[move] = float('inf')
+                    weights[move] = float("inf")
                 else:
-                    weights[move] = child.value + self.c_coefficient * np.sqrt(np.log(self.times_chosen) / child.times_chosen)
+                    weights[move] = child.value + self.c_coefficient * np.sqrt(
+                        np.log(self.times_chosen) / child.times_chosen
+                    )
 
             best_weight = max(weights.values())
-            best_moves = [move for move in self.children if weights[move] == best_weight]
+            best_moves = [
+                move for move in self.children if weights[move] == best_weight
+            ]
 
             best_move = random.choice(best_moves)
 
@@ -242,10 +263,10 @@ class MCTSNode:
             #  * po jej zakończeniu poznajemy i zwracamy zwycięzcę
 
             game = Game(
-                red=RandomPlayer(), 
-                blue=RandomPlayer(), 
-                board=self.board.duplicate(), 
-                current_player=self.current_player
+                red=RandomPlayer(),
+                blue=RandomPlayer(),
+                board=self.board.duplicate(),
+                current_player=self.current_player,
             )
             game.run(verbose=False)
 
@@ -280,7 +301,9 @@ class MCTSPlayer(Player):
 
     def choose_action(self, board: Board, current_player: Colour) -> tuple[int, int]:
         if self.root_node is None:
-            self.root_node = MCTSNode(board.duplicate(), current_player, self.c_coefficient)
+            self.root_node = MCTSNode(
+                board.duplicate(), current_player, self.c_coefficient
+            )
 
         start_time = time.time()
         while True:
@@ -291,7 +314,9 @@ class MCTSPlayer(Player):
             if elapsed_time >= self.time_limit:
                 break
 
-        action = self.root_node.select(final=True)  # TODO należy zmienić selekcje tak, by wybrała najlepszą akcję
+        action = self.root_node.select(
+            final=True
+        )  # TODO należy zmienić selekcje tak, by wybrała najlepszą akcję
         # podpowiedź: zamiast UCB wystarczy zwrócić akcję najczęściej odwiedzaną
         self._step_down(action)
         return action
@@ -321,20 +346,27 @@ def base_experiment() -> None:
     blue_wins = 0
 
     for _ in tqdm.tqdm(range(50)):
-        board = Board(7, 5)  # TODO: na początek możesz skorzystać z mniejszej planszy (np. 4x4)
+        board = Board(
+            7, 5
+        )  # TODO: na początek możesz skorzystać z mniejszej planszy (np. 4x4)
         # red_player = RandomPlayer() # TODO: zastąp jednego z agentów wariantem MCTS
         # podpowiedź: np. takim `red_player = MCTSPlayer(0.2, 0.5)`
         red_player = MCTSPlayer(0.2, 0.5)
         blue_player = RandomPlayer()
         game = Game(red_player, blue_player, board)
-        game.run(verbose=False)  # TODO: jeżeli nie chcesz czytać na konsoli zapisu partii, skorzystaj z `verbose=False`
+        game.run(
+            verbose=False
+        )  # TODO: jeżeli nie chcesz czytać na konsoli zapisu partii, skorzystaj z `verbose=False`
 
         if game.winner == Colour.RED:
             red_wins += 1
         else:
             blue_wins += 1
 
-    print(red_wins, blue_wins)  # TODO: jeżeli wszystko poszło dobrze, to agent MCTS powtarzalnie wygrywa z losowym
+    print(
+        red_wins, blue_wins
+    )  # TODO: jeżeli wszystko poszło dobrze, to agent MCTS powtarzalnie wygrywa z losowym
+
 
 def round(args):
     red_params, blue_params = args
@@ -363,6 +395,7 @@ def round(args):
         "blue_wins": blue_wins,
     }
 
+
 def tournament():
     players = [
         (0.2, 0.5),
@@ -375,7 +408,17 @@ def tournament():
 
     pairs = list(itertools.combinations(players, 2))
 
-    results = pd.DataFrame(columns=["red_params", "blue_params", "winner", "red_won", "game_length", "red_wins", "blue_wins"])
+    results = pd.DataFrame(
+        columns=[
+            "red_params",
+            "blue_params",
+            "winner",
+            "red_won",
+            "game_length",
+            "red_wins",
+            "blue_wins",
+        ]
+    )
 
     with Pool(16) as pool:
         for result in tqdm.tqdm(pool.imap_unordered(round, pairs), total=len(pairs)):
@@ -383,7 +426,8 @@ def tournament():
 
     results.to_csv("tournament_results.csv", index=False)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     # base_experiment()  # TODO: jeżeli podstawowy eksperyment zakończył się sukcesem to sprawdź inne jego warianty
     # podpowiedź:
     #  * możesz zorganizować pojedynek agentów MCTS o różnych parametrach (np. czasie na wybór akcji)

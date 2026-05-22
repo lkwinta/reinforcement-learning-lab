@@ -2,6 +2,7 @@ from . import KArmedBandit
 
 import random
 
+
 class TopHitBandit(KArmedBandit):
     def __init__(self, potential_hits: dict[str, float]):
         self.potential_hits: dict[str, float] = potential_hits

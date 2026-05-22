@@ -129,8 +129,8 @@ def plot_progress(rows: list[dict]) -> None:
 
     for i, row in enumerate(rows):
         text = (
-            f'{row["drawn_count"]}/{row["expected_count"]} '
-            f'last={row["max_drawn_epoch"]}'
+            f"{row['drawn_count']}/{row['expected_count']} "
+            f"last={row['max_drawn_epoch']}"
         )
 
         x = min(row["progress_percent"] + 1.0, 98.0)
@@ -153,11 +153,11 @@ def plot_progress(rows: list[dict]) -> None:
 def print_summary(rows: list[dict]) -> None:
     for row in rows:
         print(
-            f'{row["label"]:16s} | '
-            f'drawn={row["drawn_count"]:3d}/{row["expected_count"]:3d} | '
-            f'progress={row["progress_percent"]:6.2f}% | '
-            f'last_epoch={row["max_drawn_epoch"]:6d} | '
-            f'{row["plots_dir"]}'
+            f"{row['label']:16s} | "
+            f"drawn={row['drawn_count']:3d}/{row['expected_count']:3d} | "
+            f"progress={row['progress_percent']:6.2f}% | "
+            f"last_epoch={row['max_drawn_epoch']:6d} | "
+            f"{row['plots_dir']}"
         )
 
 

@@ -4,6 +4,7 @@ import random
 
 from . import Action, Driver, State, available_actions
 
+
 class RandomDriver(Driver):
     def __init__(self, max_learning_steps: int = 500) -> None:
         self.current_step: int = 0

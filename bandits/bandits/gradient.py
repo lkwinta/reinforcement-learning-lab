@@ -1,6 +1,7 @@
 from .bandits import BanditLearner
 import numpy as np
 
+
 class GradientLearner(BanditLearner):
     def __init__(self, lr: float = 0.1, color: str = "yellow"):
         self.name = f"Gradient (lr={lr})"
@@ -21,7 +22,7 @@ class GradientLearner(BanditLearner):
         probabilities = self._softmax(self.H)
         arm = np.random.choice(self.arms, p=probabilities)
         return arm
-    
+
     def acknowledge_reward(self, arm: str, reward: float) -> None:
         arm_index = self.arms.index(arm)
         probs = self._softmax(self.H)

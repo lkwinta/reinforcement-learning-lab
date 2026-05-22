@@ -37,10 +37,7 @@ class State(NamedTuple):
 
 
 POTENTIAL_ACTIONS_ARRAY = np.array(
-    [
-        [a_x, a_y]
-        for a_x, a_y in itertools.product((-1, 0, 1), (-1, 0, 1))
-    ],
+    [[a_x, a_y] for a_x, a_y in itertools.product((-1, 0, 1), (-1, 0, 1))],
     dtype=np.int64,
 )
 
@@ -93,8 +90,7 @@ def available_actions(state: State) -> list[Action]:
     )
 
     return [
-        Action(int(actions[i, 0]), int(actions[i, 1]))
-        for i in range(actions.shape[0])
+        Action(int(actions[i, 0]), int(actions[i, 1])) for i in range(actions.shape[0])
     ]
 
 
@@ -123,16 +119,13 @@ class Corner:
     @staticmethod
     def _determine_positions(image: np.ndarray) -> set[Position]:
         return {
-            Position(x, y)
-            for (x, y), value in np.ndenumerate(image)
-            if value == 1.0
+            Position(x, y) for (x, y), value in np.ndenumerate(image) if value == 1.0
         }
 
 
 class Car:
     POTENTIAL_ACTIONS: list[Action] = [
-        Action(int(action[0]), int(action[1]))
-        for action in POTENTIAL_ACTIONS_ARRAY
+        Action(int(action[0]), int(action[1])) for action in POTENTIAL_ACTIONS_ARRAY
     ]
 
     def __init__(
@@ -269,8 +262,11 @@ class Experiment:
 
         if self.eval_active:
             self._evaluate_driver()
-        if self.save_driver and self.current_episode_no % self.save_driver_frequency == 0:
-            self.driver.save(f'{self.plots_path}/driver_{self.current_episode_no}.pkl')
+        if (
+            self.save_driver
+            and self.current_episode_no % self.save_driver_frequency == 0
+        ):
+            self.driver.save(f"{self.plots_path}/driver_{self.current_episode_no}.pkl")
         return total_penalty, positions
 
     def _episode(self) -> tuple[int, list[Position]]:

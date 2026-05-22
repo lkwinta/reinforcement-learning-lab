@@ -61,6 +61,7 @@ class TensorboardLogger(BaseLogger):
         self.writer.flush()
         self.writer.close()
 
+
 class JSONLogger(BaseLogger):
     def __init__(self, save_path: Path, save_every: Optional[int] = None) -> None:
         super().__init__()

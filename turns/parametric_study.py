@@ -1,11 +1,10 @@
 from problem import Corner, Experiment, Environment
-from problem import OffPolicyNStepSarsaDriver, RandomDriver
+from problem import OffPolicyNStepSarsaDriver
 
 from itertools import product
 from multiprocessing import Pool
 import os
 from tqdm import tqdm
-import parse
 
 import numpy as np
 
@@ -16,10 +15,11 @@ param_grid = {
     "alpha": np.linspace(0.01, 0.99, 20),
 }
 
+
 def run_experiment(params) -> None:
     step_no, alpha = params
 
-    result_path = f'parametric_study_results/step_no_{step_no}/alpha_{alpha:.2f}'
+    result_path = f"parametric_study_results/step_no_{step_no}/alpha_{alpha:.2f}"
 
     driver = OffPolicyNStepSarsaDriver(
         step_no=step_no,
@@ -31,55 +31,66 @@ def run_experiment(params) -> None:
 
     experiment = Experiment(
         environment=Environment(
-            corner=Corner(
-                name='corner_c'
-            ),
+            corner=Corner(name="corner_c"),
             steering_fail_chance=0.01,
         ),
         driver=driver,
         number_of_episodes=30000,
-        plots_path=f'{result_path}/plots',
+        plots_path=f"{result_path}/plots",
         drawing_frequency=1000,
         show_progress=False,
-
         eval_active=True,
         eval_frequency=10,
         eval_episodes=10,
-
         save_driver=False,
     )
 
     experiment.run()
 
-    with open(f'{result_path}/eval_penalties.txt', 'w') as f:
+    with open(f"{result_path}/eval_penalties.txt", "w") as f:
         for penalty in experiment.eval_penalties:
-            f.write(f'{penalty}\n')
+            f.write(f"{penalty}\n")
 
-    with open(f'{result_path}/penalties.txt', 'w') as f:
+    with open(f"{result_path}/penalties.txt", "w") as f:
         for penalty in experiment.penalties:
-            f.write(f'{penalty}\n')
+            f.write(f"{penalty}\n")
 
-    driver.save(f'{result_path}/driver.pkl')
+    driver.save(f"{result_path}/driver.pkl")
+
 
 def main() -> None:
     keep_old_results = True
     param_space = list(product(*param_grid.values()))
 
-    os.makedirs('parametric_study_results', exist_ok=True)
+    os.makedirs("parametric_study_results", exist_ok=True)
 
     existent_results = []
-    
-    for step_no, alpha in param_space:
-        os.makedirs(f'parametric_study_results/step_no_{step_no}/alpha_{alpha:.2f}/plots', exist_ok=True)
 
-        if os.path.exists(f'parametric_study_results/step_no_{step_no}/alpha_{alpha:.2f}/eval_penalties.txt') and keep_old_results:
+    for step_no, alpha in param_space:
+        os.makedirs(
+            f"parametric_study_results/step_no_{step_no}/alpha_{alpha:.2f}/plots",
+            exist_ok=True,
+        )
+
+        if (
+            os.path.exists(
+                f"parametric_study_results/step_no_{step_no}/alpha_{alpha:.2f}/eval_penalties.txt"
+            )
+            and keep_old_results
+        ):
             existent_results.append((step_no, alpha))
 
-    param_space_reduced = [params for params in param_space if params not in existent_results]
-    
+    param_space_reduced = [
+        params for params in param_space if params not in existent_results
+    ]
+
     with Pool(16) as pool:
-        for _ in tqdm(pool.imap_unordered(run_experiment, param_space_reduced), total=len(param_space_reduced)):
+        for _ in tqdm(
+            pool.imap_unordered(run_experiment, param_space_reduced),
+            total=len(param_space_reduced),
+        ):
             pass
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

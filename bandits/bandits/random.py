@@ -2,6 +2,7 @@ from . import BanditLearner
 
 import random
 
+
 class RandomLearner(BanditLearner):
     def __init__(self):
         self.name = "Random"

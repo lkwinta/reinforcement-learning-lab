@@ -37,6 +37,8 @@ dependencies = [
     "panda-gym==3.0.7",
     "tensorboard==2.19.0",
     "setuptools<80",
+    "plotly",
+    "kaleido"
 ]
 
 [dependency-groups]

@@ -1,7 +1,6 @@
 import itertools
 import time
 from copy import deepcopy
-from typing import Optional
 
 import gymnasium as gym
 import numpy as np
@@ -15,7 +14,6 @@ from .loggers import BaseLogger
 from .loggers import SilentLogger
 from .policies import MlpPolicy
 from .utils import count_vars
-
 
 
 class SAC:
@@ -186,19 +184,20 @@ class SAC:
             init_value = 1.0
             if "_" in self.alpha:
                 init_value = float(self.alpha.split("_")[1])
-                assert (
-                    init_value > 0.0
-                ), "The initial value of alpha must be greater than 0"
+                assert init_value > 0.0, (
+                    "The initial value of alpha must be greater than 0"
+                )
 
             # Consider: optimizing the log of the entropy coeff which is slightly different from the paper
             # as discussed in https://github.com/rail-berkeley/softlearning/issues/37
 
             # TODO: fill this in
             self.log_alpha = torch.tensor(
-                np.log(init_value), 
-                dtype=torch.float32, 
-                device=alpha_device, 
-                requires_grad=True)
+                np.log(init_value),
+                dtype=torch.float32,
+                device=alpha_device,
+                requires_grad=True,
+            )
             self.alpha_optimizer = Adam([self.log_alpha], lr=lr)
             self.alpha = self.log_alpha.exp().detach()
         else:
@@ -210,7 +209,7 @@ class SAC:
 
     # Set up function for computing SAC Q-losses
     def compute_loss_q(self, data):
-        o, a, r, o2, ter, tru = (
+        o, a, r, o2, ter, _tru = (
             data["observation"],
             data["action"],
             data["reward"],
@@ -349,7 +348,7 @@ class SAC:
                 (o, i), d, ep_ret, ep_len = env.reset(), False, 0, 0
 
                 if episode_sleep > 0:
-                    time.sleep(episode_sleep) 
+                    time.sleep(episode_sleep)
 
                 if store_experience:
                     self.buffer.start_episode()
@@ -404,7 +403,6 @@ class SAC:
                 results["ep_frames"] = frames
 
             return results
-
 
     def train(self, n_steps, log_interval=1000, callbacks=[]):
         # Prepare for interaction with environment
@@ -473,7 +471,6 @@ class SAC:
 
         return test_ep_return
 
-
     def save(self, path: str):
         torch.save(
             {
@@ -482,8 +479,12 @@ class SAC:
                 "pi_optimizer_state_dict": self.pi_optimizer.state_dict(),
                 "q_optimizer_state_dict": self.q_optimizer.state_dict(),
                 # TODO: fill this in
-                "alpha_optimizer_state_dict": self.alpha_optimizer.state_dict() if self.alpha_optimizer is not None else None,
-                "log_alpha": self.log_alpha.detach() if self.log_alpha is not None else None,
+                "alpha_optimizer_state_dict": self.alpha_optimizer.state_dict()
+                if self.alpha_optimizer is not None
+                else None,
+                "log_alpha": self.log_alpha.detach()
+                if self.log_alpha is not None
+                else None,
             },
             path,
         )
@@ -497,10 +498,19 @@ class SAC:
         # TODO: fill this in
         # self.alpha_optimizer = ...
 
-        if checkpoint["log_alpha"] is not None and checkpoint["alpha_optimizer_state_dict"] is not None:
-            self.log_alpha = torch.tensor(checkpoint["log_alpha"], device=self.alpha.device, requires_grad=True) 
-            self.alpha_optimizer = Adam([self.log_alpha], lr=self.pi_optimizer.param_groups[0]['lr'])
-            self.alpha_optimizer.load_state_dict(checkpoint["alpha_optimizer_state_dict"])
+        if (
+            checkpoint["log_alpha"] is not None
+            and checkpoint["alpha_optimizer_state_dict"] is not None
+        ):
+            self.log_alpha = torch.tensor(
+                checkpoint["log_alpha"], device=self.alpha.device, requires_grad=True
+            )
+            self.alpha_optimizer = Adam(
+                [self.log_alpha], lr=self.pi_optimizer.param_groups[0]["lr"]
+            )
+            self.alpha_optimizer.load_state_dict(
+                checkpoint["alpha_optimizer_state_dict"]
+            )
         else:
             self.log_alpha = None
             self.alpha_optimizer = None

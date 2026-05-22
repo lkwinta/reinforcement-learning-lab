@@ -5,6 +5,7 @@ import PIL
 
 from matplotlib import pyplot as plt
 
+
 def main() -> None:
     if len(sys.argv) != 3:
         print("Usage: python visualize.py <images_dir> <outname>")
@@ -26,11 +27,13 @@ def main() -> None:
 
             # crop the image to remove the white space
             crop_size = 150
-            img = img.crop((crop_size, crop_size, img.width - crop_size, img.height - crop_size))
+            img = img.crop(
+                (crop_size, crop_size, img.width - crop_size, img.height - crop_size)
+            )
 
             axs[idx, idy].imshow(img)
             axs[idx, idy].set_title(f"Episode {plot_num[0]}")
-            axs[idx, idy].axis('off')
+            axs[idx, idy].axis("off")
             idy += 1
             if idy == 3:
                 idy = 0
@@ -41,6 +44,6 @@ def main() -> None:
     plt.tight_layout()
     plt.savefig(outname)
 
-if __name__ == '__main__':
-    main()
 
+if __name__ == "__main__":
+    main()

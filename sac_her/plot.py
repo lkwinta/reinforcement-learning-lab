@@ -3,6 +3,7 @@ from matplotlib import pyplot as plt
 import json
 import argparse
 
+
 def main(files: list[str], labels: list[str], output: str) -> None:
     results = {}
 
@@ -11,7 +12,7 @@ def main(files: list[str], labels: list[str], output: str) -> None:
             data = json.load(f)
 
         results[label] = {}
-        
+
         for entry in data:
             name = entry["name"]
             value = entry["value"]
@@ -32,7 +33,7 @@ def main(files: list[str], labels: list[str], output: str) -> None:
                 plot_dict[metric_name] = {}
 
             plot_dict[metric_name][algo_label] = (data["steps"], data["values"])
-            
+
     for metric_name, algos in plot_dict.items():
         plt.figure()
         for algo_label, (steps, values) in algos.items():
@@ -44,14 +45,13 @@ def main(files: list[str], labels: list[str], output: str) -> None:
         plt.grid()
         plt.savefig(f"{output}/{metric_name}.png")
         plt.close()
-            
+
+
 def file_label_pair(value: str) -> tuple[str, str]:
     try:
         file, label = value.split(":", 1)
     except ValueError:
-        raise argparse.ArgumentTypeError(
-            "Expected pair in format FILE:LABEL"
-        )
+        raise argparse.ArgumentTypeError("Expected pair in format FILE:LABEL")
 
     if not file:
         raise argparse.ArgumentTypeError("File path cannot be empty")
@@ -60,11 +60,19 @@ def file_label_pair(value: str) -> tuple[str, str]:
         raise argparse.ArgumentTypeError("Label cannot be empty")
 
     return file, label
-    
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("files_and_labels", nargs="+", help="Pairs of log files and their corresponding labels", type=file_label_pair)
-    parser.add_argument("--output", type=str, help="Directory to save the plot", default="plots")
+    parser.add_argument(
+        "files_and_labels",
+        nargs="+",
+        help="Pairs of log files and their corresponding labels",
+        type=file_label_pair,
+    )
+    parser.add_argument(
+        "--output", type=str, help="Directory to save the plot", default="plots"
+    )
     args = parser.parse_args()
 
     files, labels = zip(*args.files_and_labels)

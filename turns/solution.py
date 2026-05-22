@@ -1,12 +1,13 @@
 from problem import Corner, Experiment, Environment
-from problem import OffPolicyNStepSarsaDriver, RandomDriver
+from problem import OffPolicyNStepSarsaDriver
 
 import os
 
 MAX_LEARNING_STEPS = 2000
 
+
 def experiment(name, step_no, alpha, corner):
-    os.makedirs(f'{name}_plots', exist_ok=True)
+    os.makedirs(f"{name}_plots", exist_ok=True)
 
     driver = OffPolicyNStepSarsaDriver(
         step_no=step_no,
@@ -18,42 +19,42 @@ def experiment(name, step_no, alpha, corner):
 
     experiment = Experiment(
         environment=Environment(
-            corner=Corner(
-                name=corner
-            ),
+            corner=Corner(name=corner),
             steering_fail_chance=0.01,
         ),
         driver=driver,
         number_of_episodes=30000,
         drawing_frequency=1000,
-        plots_path=f'{name}_plots',
+        plots_path=f"{name}_plots",
     )
 
     experiment.run()
 
-    driver.save(f'{name}_driver.pkl')
+    driver.save(f"{name}_driver.pkl")
+
 
 def main() -> None:
     experiment(
-        name='corner_b',
+        name="corner_b",
         step_no=5,
         alpha=0.3,
-        corner='corner_b',
+        corner="corner_b",
     )
 
     experiment(
-        name='corner_c',
+        name="corner_c",
         step_no=5,
         alpha=0.3,
-        corner='corner_c',
+        corner="corner_c",
     )
 
     experiment(
-        name='corner_d',
+        name="corner_d",
         step_no=3,
         alpha=0.68,
-        corner='corner_d',
+        corner="corner_d",
     )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

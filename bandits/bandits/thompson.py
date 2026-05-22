@@ -1,6 +1,7 @@
 from . import BanditLearner
 import random
 
+
 class ThompsonLearner(BanditLearner):
     def __init__(self, color: str = "pink"):
         self.name = "Thompson"

@@ -1,8 +1,9 @@
 from problem import Corner, Experiment, Environment
-from problem import OffPolicyNStepSarsaDriver, RandomDriver
+from problem import OffPolicyNStepSarsaDriver
 
 import sys
 import os
+
 
 def main() -> None:
     if len(sys.argv) != 3:
@@ -16,23 +17,22 @@ def main() -> None:
     driver.experiment_rate = 0.0
     driver.step_size = 0.0
 
-    os.makedirs(f'test_plots_{driver_path}', exist_ok=True)
+    os.makedirs(f"test_plots_{driver_path}", exist_ok=True)
 
     experiment = Experiment(
         environment=Environment(
-            corner=Corner(
-                name=corner_name
-            ),
+            corner=Corner(name=corner_name),
             steering_fail_chance=0.01,
         ),
         driver=driver,
         number_of_episodes=10,
-        plots_path=f'test_plots_{driver_path}',
+        plots_path=f"test_plots_{driver_path}",
         drawing_frequency=1,
         averaging_window_size=1,
     )
 
     experiment.run()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

@@ -1,10 +1,22 @@
 import matplotlib
+
 matplotlib.use("QtAgg")
 import matplotlib.pyplot as plt
 import numpy as np
 
 from itertools import accumulate
-from bandits import *
+from bandits.bandits import (
+    KArmedBandit,
+    TopHitBandit,
+    BanditLearner,
+    ExploreThenCommitLearner,
+    EGreedyLearner,
+    UCB1Learner,
+    GradientLearner,
+    RandomLearner,
+    ThompsonLearner,
+)
+
 
 class BanditProblem:
     def __init__(self, time_steps: int, bandit: KArmedBandit, learner: BanditLearner):
@@ -62,8 +74,12 @@ def main():
         RandomLearner(),
         ExploreThenCommitLearner(m=5, color="green"),
         EGreedyLearner(epsilon=0.1, color="red"),
-        EGreedyLearner(epsilon=0.0, color="orange"), # full greedy
-        EGreedyLearner(epsilon=0.1, bias={arm: 0.1 for arm in POTENTIAL_HITS.keys()}, color="purple"), # more exploration
+        EGreedyLearner(epsilon=0.0, color="orange"),  # full greedy
+        EGreedyLearner(
+            epsilon=0.1,
+            bias={arm: 0.1 for arm in POTENTIAL_HITS.keys()},
+            color="purple",
+        ),  # more exploration
         UCB1Learner(c=1.0, color="blue"),
         UCB1Learner(c=2.0, color="cyan"),
         GradientLearner(lr=0.3, color="yellow"),
@@ -72,13 +88,13 @@ def main():
     for learner in learners:
         evaluate_learner(learner)
 
-    plt.xlabel('Czas')
-    plt.ylabel('Suma uzyskanych nagród')
+    plt.xlabel("Czas")
+    plt.ylabel("Suma uzyskanych nagród")
     plt.xlim(0, TIME_STEPS)
     plt.ylim(0, TIME_STEPS)
     plt.legend()
     plt.show()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -11,9 +11,9 @@ import os
 from pathlib import Path
 
 import gymnasium as gym
+
 # Uncomment the following line to use gymnasium_robotics environments
 # import gymnasium_robotics
-import panda_gym
 import torch
 
 # Uncomment the following lines to register gymnasium_robotics environments
@@ -25,13 +25,13 @@ from asdf.extractors import DictExtractor
 from asdf.loggers import JSONLogger
 from asdf.policies import MlpPolicy
 
+
 # There are two challenges in this exercise:
 # 1. Implement the Hindsight Experience Replay (HER) algorithm.
 #    This is done in the HerReplayBuffer class.
 # 2. Improve the SAC algorithm with an automatically adjusted temperature (alpha) parameter.
 #    This is done in the SAC class.
 def main(config: dict) -> None:
-
     env_id = config["env"]
     load = config["load"]
     render = config["render"]
@@ -56,13 +56,14 @@ def main(config: dict) -> None:
     )
     policy.to(device)
 
-
     buffer_type = config.get("buffer_type", "her")
     if buffer_type == "her":
         her_strategy = config.get("her_strategy", "future")
         n_sampled_goal = config.get("her_n_sampled_goal", 3)
 
-        print(f"Using HER replay buffer with strategy '{her_strategy}' and {n_sampled_goal} sampled goals per transition")
+        print(
+            f"Using HER replay buffer with strategy '{her_strategy}' and {n_sampled_goal} sampled goals per transition"
+        )
 
         buffer = HerReplayBuffer(
             env=env,
@@ -77,10 +78,9 @@ def main(config: dict) -> None:
             size=1_000_000,
             device=device,
         )
-    
+
     logger = JSONLogger(
-        save_path=Path(f"{config['logs_dir']}/sac_her_log.json"),
-        save_every=20000
+        save_path=Path(f"{config['logs_dir']}/sac_her_log.json"), save_every=20000
     )
 
     alpha = config["alpha"]
@@ -93,7 +93,7 @@ def main(config: dict) -> None:
         update_after=1_000,
         batch_size=64,
         # alpha="auto", # use automatic alpha adjustment (uncoment when implemented)
-        alpha=alpha, # use fixed alpha (comment out when implementing automatic alpha adjustment)
+        alpha=alpha,  # use fixed alpha (comment out when implementing automatic alpha adjustment)
         gamma=0.9,
         # polyak=0.95,
         lr=1e-4,
@@ -114,14 +114,20 @@ def main(config: dict) -> None:
 
         env = gym.make(env_id)
         eval_results = algo.test(env, n_episodes=10, episode_sleep=0, render_sleep=0)
-        json.dump(eval_results, open(f"{config['logs_dir']}/sac_her_final_eval.json", "w"), indent=4)
+        json.dump(
+            eval_results,
+            open(f"{config['logs_dir']}/sac_her_final_eval.json", "w"),
+            indent=4,
+        )
         env.close()
     else:
         policy.cpu()
         env = gym.make(env_id, render_mode="human")
         results = algo.test(env, n_episodes=10, episode_sleep=1, render_sleep=1 / 20)
         env.close()
-        print(f"Test reward {results['mean_ep_ret']}, Test episode length: {results['mean_ep_len']}")
+        print(
+            f"Test reward {results['mean_ep_ret']}, Test episode length: {results['mean_ep_len']}"
+        )
 
 
 if __name__ == "__main__":
@@ -136,16 +142,27 @@ if __name__ == "__main__":
         "--logs_dir", type=str, default="logs", help="Directory to save training logs"
     )
     parser.add_argument(
-        "--alpha", default=0.95, help="Temperature parameter for SAC (use 'auto' for automatic adjustment)"
+        "--alpha",
+        default=0.95,
+        help="Temperature parameter for SAC (use 'auto' for automatic adjustment)",
     )
     parser.add_argument(
-        "--buffer_type", choices=["her", "dict"], default="her", help="Type of replay buffer to use"
+        "--buffer_type",
+        choices=["her", "dict"],
+        default="her",
+        help="Type of replay buffer to use",
     )
     parser.add_argument(
-        "--her_strategy", choices=["future", "final", "episode"], default="future", help="HER goal selection strategy"
+        "--her_strategy",
+        choices=["future", "final", "episode"],
+        default="future",
+        help="HER goal selection strategy",
     )
     parser.add_argument(
-        "--her_n_sampled_goal", type=int, default=3, help="Number of HER goals to sample per transition"
+        "--her_n_sampled_goal",
+        type=int,
+        default=3,
+        help="Number of HER goals to sample per transition",
     )
     parser.add_argument(
         "--n_steps", type=int, default=100_000, help="Number of training steps"

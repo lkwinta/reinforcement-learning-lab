@@ -139,8 +139,6 @@ class DictReplayBuffer(BaseBuffer):
         )
 
 
-
-
 class HerReplayBuffer(DictReplayBuffer):
     def __init__(
         self,
@@ -161,7 +159,7 @@ class HerReplayBuffer(DictReplayBuffer):
         if self.selection_strategy == "final":
             goal = self.current_episode[-1]["next_observation"]["achieved_goal"]
         elif self.selection_strategy == "future":
-            future_transitions = self.current_episode[transition_idx + 1:]
+            future_transitions = self.current_episode[transition_idx + 1 :]
             if len(future_transitions) > 0:
                 future_transition_idx = np.random.randint(len(future_transitions))
                 future_transition = future_transitions[future_transition_idx]
@@ -174,10 +172,12 @@ class HerReplayBuffer(DictReplayBuffer):
             random_transition = episode_transitions[random_transition_idx]
             goal = random_transition["next_observation"]["achieved_goal"]
         else:
-            raise ValueError(f"Invalid goal selection strategy: {self.selection_strategy}")
-        
+            raise ValueError(
+                f"Invalid goal selection strategy: {self.selection_strategy}"
+            )
+
         return goal
-    
+
     # compute distance from https://github.com/qgallouedec/panda-gym/blob/master/panda_gym/utils.py#L4
     @staticmethod
     def _distance(a: np.ndarray, b: np.ndarray) -> np.ndarray:
@@ -194,16 +194,22 @@ class HerReplayBuffer(DictReplayBuffer):
         dist = np.linalg.norm(a - b, axis=-1)
         # round at 1e-6 (ensure determinism and avoid numerical noise)
         return np.round(dist, 6)
-    
+
     # Compute reward from https://github.com/qgallouedec/panda-gym/blob/master/panda_gym/envs/tasks/reach.py#L59
-    def _compute_reward(self, achieved_goal: np.ndarray, desired_goal: np.ndarray, info: dict[str, Any] = {}, sparse=True) -> np.ndarray:
+    def _compute_reward(
+        self,
+        achieved_goal: np.ndarray,
+        desired_goal: np.ndarray,
+        info: dict[str, Any] = {},
+        sparse=True,
+    ) -> np.ndarray:
         d = HerReplayBuffer._distance(achieved_goal, desired_goal)
         if sparse:
             # TODO: make the threshold global const
             return -np.array(d > 0.05, dtype=np.float32)
         else:
             return -d.astype(np.float32)
-             
+
     def start_episode(self):
         self.current_episode = []
 
@@ -221,7 +227,7 @@ class HerReplayBuffer(DictReplayBuffer):
 
             for _ in range(self.n_sampled_goal):
                 goal = self._sample_goal(transition_idx)
-                
+
                 new_observation = transition["observation"].copy()
                 new_observation["desired_goal"] = goal
                 new_next_observation = transition["next_observation"].copy()
@@ -254,15 +260,17 @@ class HerReplayBuffer(DictReplayBuffer):
         truncated: bool,
         info: dict[str, Any],
     ):
-        self.current_episode.append({
-            "observation": observation,
-            "action": action,
-            "reward": reward,
-            "next_observation": next_observation,
-            "terminated": terminated,
-            "truncated": truncated,
-            "info": info,
-        })
+        self.current_episode.append(
+            {
+                "observation": observation,
+                "action": action,
+                "reward": reward,
+                "next_observation": next_observation,
+                "terminated": terminated,
+                "truncated": truncated,
+                "info": info,
+            }
+        )
 
         # if terminated or truncated:
         #     self.end_episode()

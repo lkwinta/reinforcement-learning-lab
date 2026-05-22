@@ -32,6 +32,7 @@ _  +[_[_+_]P/    _    |_       ____      _=--|-~
 """
 
 import os
+
 os.environ.setdefault("KERAS_BACKEND", "torch")
 
 import click
@@ -45,10 +46,9 @@ from tqdm.rich import tqdm
 matplotlib.use("Agg")
 
 if (backend := keras.backend.backend()) != "torch":
-    raise NotImplementedError(
-        f"Backend {backend!r} nie jest wspierany!"
-    )
+    raise NotImplementedError(f"Backend {backend!r} nie jest wspierany!")
 import torch
+
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"[backend] PyTorch  |  urzadzenie: {DEVICE.upper()}")
 
@@ -65,32 +65,32 @@ def to_numpy(tensor) -> np.ndarray:
 
 ENV_CONFIGS: dict[str, dict] = {
     "cartpole": {
-        "gym_id":           "CartPole-v1",
-        "hidden":           (128, 128),
-        "learning_rate":    1e-2,
-        "discount_factor":  0.99,
-        "entropy_coeff":    0.0,
-        "separate_trunks":  False,
-        "n_episodes":       2000,
+        "gym_id": "CartPole-v1",
+        "hidden": (128, 128),
+        "learning_rate": 1e-2,
+        "discount_factor": 0.99,
+        "entropy_coeff": 0.0,
+        "separate_trunks": False,
+        "n_episodes": 2000,
         "solved_threshold": 475.0,
-        "window":           100,
-        "plot_every":       25,
-        "save_every":       100,
-        "plot_dir":         "plots_cartpole",
+        "window": 100,
+        "plot_every": 25,
+        "save_every": 100,
+        "plot_dir": "plots_cartpole",
     },
     "lunar": {
-        "gym_id":           "LunarLander-v3",
-        "hidden":           (256, 256),
-        "learning_rate":    3e-4,
-        "discount_factor":  0.99,
-        "entropy_coeff":    0.0,
-        "separate_trunks":  False,
-        "n_episodes":       5000,
+        "gym_id": "LunarLander-v3",
+        "hidden": (256, 256),
+        "learning_rate": 3e-4,
+        "discount_factor": 0.99,
+        "entropy_coeff": 0.0,
+        "separate_trunks": False,
+        "n_episodes": 5000,
         "solved_threshold": 200.0,
-        "window":           100,
-        "plot_every":       50,
-        "save_every":       50,
-        "plot_dir":         "plots_lunar",
+        "window": 100,
+        "plot_every": 50,
+        "save_every": 50,
+        "plot_dir": "plots_lunar",
     },
 }
 
@@ -113,7 +113,7 @@ def build_actor_critic(
     x = keras.layers.Dense(hidden[1], activation="tanh", name="fc2")(x)
 
     logits = keras.layers.Dense(n_actions, name="logits")(x)
-    value  = keras.layers.Dense(1,         name="value")(x)
+    value = keras.layers.Dense(1, name="value")(x)
 
     return keras.Model(inputs=obs, outputs=[logits, value], name="ActorCritic")
 
@@ -138,9 +138,10 @@ def build_actor_critic_separate(
     # Trzonek krytyka
     x_c = keras.layers.Dense(hidden[0], activation="tanh", name="critic_fc1")(obs)
     x_c = keras.layers.Dense(hidden[1], activation="tanh", name="critic_fc2")(x_c)
-    value  = keras.layers.Dense(1,         name="value")(x_c)
+    value = keras.layers.Dense(1, name="value")(x_c)
 
     return keras.Model(inputs=obs, outputs=[logits, value], name="ActorCriticSeparate")
+
 
 class ActorCriticController:
     """
@@ -156,14 +157,14 @@ class ActorCriticController:
         hidden: tuple[int, int] = (256, 256),
         separate: bool = False,
     ) -> None:
-        self.gamma         = discount_factor
+        self.gamma = discount_factor
         self.entropy_coeff = entropy_coeff
 
-        obs_dim   = int(np.prod(environment.observation_space.shape))
+        obs_dim = int(np.prod(environment.observation_space.shape))
         n_actions = int(environment.action_space.n)
 
         build_fn = build_actor_critic_separate if separate else build_actor_critic
-        self.model     = build_fn(obs_dim, n_actions, hidden=hidden)
+        self.model = build_fn(obs_dim, n_actions, hidden=hidden)
         self.optimizer = keras.optimizers.Adam(learning_rate=learning_rate)
 
         self.last_action: int | None = None
@@ -183,7 +184,7 @@ class ActorCriticController:
         # Podpowiedz: może pomogą keras.ops..?
         probs = keras.ops.softmax(logits, axis=-1)
 
-        # TODO: przekonwertuj prawdopodobienstwa do numpy (przyda sie też metoda ravel i pomocnicze to_numpy), 
+        # TODO: przekonwertuj prawdopodobienstwa do numpy (przyda sie też metoda ravel i pomocnicze to_numpy),
         # znormalizuj dla bezpieczenstwa (podziel przez sume) i wylosuj akcje uzywajac np.random.choice
         # Podpowiedz: astype(np.float64) często ratuje sytuację...
         probs_np = to_numpy(probs).ravel().astype(np.float64)
@@ -247,7 +248,9 @@ class ActorCriticController:
         # Podpowiedz: log_probs zostalo juz obliczone powyzej...
         # Entropia = -sum(p * log(p)) = -sum(exp(log(p)) * log(p))
         # - * - = +
-        entropy_loss = self.entropy_coeff * keras.ops.sum(keras.ops.exp(log_probs) * log_probs)
+        entropy_loss = self.entropy_coeff * keras.ops.sum(
+            keras.ops.exp(log_probs) * log_probs
+        )
 
         return critic_loss + actor_loss + entropy_loss
 
@@ -261,11 +264,13 @@ class ActorCriticController:
         return [t.grad if t.grad is not None else torch.zeros_like(t) for t in raw]
 
 
-def render_model(model_path: str, env_name: str = "cartpole", n_episodes: int = 5) -> None:
+def render_model(
+    model_path: str, env_name: str = "cartpole", n_episodes: int = 5
+) -> None:
     """Wczytuje checkpoint .keras i renderuje n_episodes z widokiem dla czlowieka."""
     cfg = ENV_CONFIGS[env_name]
     print(f"Wczytywanie modelu z: {model_path}  (srodowisko: {cfg['gym_id']})")
-    env   = gym.make(cfg["gym_id"], render_mode="human")
+    env = gym.make(cfg["gym_id"], render_mode="human")
     model = keras.saving.load_model(model_path)
     model.summary()
 
@@ -276,15 +281,19 @@ def render_model(model_path: str, env_name: str = "cartpole", n_episodes: int = 
 
         while not done:
             logits, _ = model(format_state(state), training=False)
-            probs = to_numpy(keras.ops.softmax(logits, axis=-1)).ravel().astype(np.float64)
+            probs = (
+                to_numpy(keras.ops.softmax(logits, axis=-1)).ravel().astype(np.float64)
+            )
             probs /= probs.sum()
 
-            action = int(np.argmax(probs)) # zachlanne — bez eksploracji - moga byc lepsze wyniki!
+            action = int(
+                np.argmax(probs)
+            )  # zachlanne — bez eksploracji - moga byc lepsze wyniki!
             state, reward, terminated, truncated, _ = env.step(action)
             done = terminated or truncated
             total_reward += float(reward)
 
-        print(f"  Epizod {ep+1}: laczna nagroda = {total_reward:.1f}")
+        print(f"  Epizod {ep + 1}: laczna nagroda = {total_reward:.1f}")
     env.close()
 
 
@@ -295,11 +304,11 @@ def train(env_name: str = "cartpole", resume_path: str | None = None) -> None:
     env = gym.make(cfg["gym_id"], render_mode=None)
     agent = ActorCriticController(
         env,
-        learning_rate   = cfg["learning_rate"],
-        discount_factor = cfg["discount_factor"],
-        entropy_coeff   = cfg["entropy_coeff"],
-        hidden          = cfg["hidden"],
-        separate        = cfg["separate_trunks"],
+        learning_rate=cfg["learning_rate"],
+        discount_factor=cfg["discount_factor"],
+        entropy_coeff=cfg["entropy_coeff"],
+        hidden=cfg["hidden"],
+        separate=cfg["separate_trunks"],
     )
 
     if resume_path:
@@ -311,14 +320,14 @@ def train(env_name: str = "cartpole", resume_path: str | None = None) -> None:
     agent.model.summary()
 
     past_rewards: list[float] = []
-    past_errors:  list[float] = []
+    past_errors: list[float] = []
 
     N_EPISODES = cfg["n_episodes"]
-    WINDOW     = cfg["window"]
-    THRESHOLD  = cfg["solved_threshold"]
+    WINDOW = cfg["window"]
+    THRESHOLD = cfg["solved_threshold"]
     PLOT_EVERY = cfg["plot_every"]
     SAVE_EVERY = cfg["save_every"]
-    PLOT_DIR   = cfg["plot_dir"]
+    PLOT_DIR = cfg["plot_dir"]
 
     for ep in tqdm(range(N_EPISODES), desc=f"{cfg['gym_id']} trening"):
         state, _ = env.reset()
@@ -344,13 +353,21 @@ def train(env_name: str = "cartpole", resume_path: str | None = None) -> None:
         if len(past_rewards) >= WINDOW:
             mean_w = np.mean(past_rewards[-WINDOW:])
             if mean_w >= THRESHOLD:
-                print(f"\nUkonczone w epizodzie {ep}!\n Srednia nagroda z ostatnich {WINDOW} epizodow: {mean_w:.1f}")
+                print(
+                    f"\nUkonczone w epizodzie {ep}!\n Srednia nagroda z ostatnich {WINDOW} epizodow: {mean_w:.1f}"
+                )
                 agent.model.save(f"{env_name}_solved_ep{ep}.keras")
                 break
 
         if ep % PLOT_EVERY == 0 and len(past_rewards) >= WINDOW:
-            rolling_err = [np.mean(past_errors[i:i+WINDOW]) for i in range(len(past_errors)  - WINDOW)]
-            rolling_rew = [np.mean(past_rewards[i:i+WINDOW]) for i in range(len(past_rewards) - WINDOW)]
+            rolling_err = [
+                np.mean(past_errors[i : i + WINDOW])
+                for i in range(len(past_errors) - WINDOW)
+            ]
+            rolling_rew = [
+                np.mean(past_rewards[i : i + WINDOW])
+                for i in range(len(past_rewards) - WINDOW)
+            ]
 
             fig, (ax0, ax1) = plt.subplots(2, 1, figsize=(10, 7))
             ax0.plot(rolling_err, color="tab:red")
@@ -358,7 +375,13 @@ def train(env_name: str = "cartpole", resume_path: str | None = None) -> None:
             ax0.set_title(f"Sredni kwadratowy blad TD (okno {WINDOW})")
             ax0.set_ylabel("MSE")
             ax1.plot(rolling_rew, color="tab:green")
-            ax1.axhline(THRESHOLD, color="gold", linewidth=1, linestyle="--", label="prog ukonczenia")
+            ax1.axhline(
+                THRESHOLD,
+                color="gold",
+                linewidth=1,
+                linestyle="--",
+                label="prog ukonczenia",
+            )
             ax1.legend(fontsize=8)
             ax1.set_title(f"Suma nagrod w epizodzie (okno {WINDOW})")
             ax1.set_ylabel("Zwrot")
@@ -378,9 +401,25 @@ def train(env_name: str = "cartpole", resume_path: str | None = None) -> None:
 
 
 @click.command()
-@click.option("--env", type=click.Choice(["cartpole", "lunar"]), default="cartpole", show_default=True, help="Srodowisko do treningu.")
-@click.option("--render", metavar="MODEL.keras", default=None, help="Wczytaj zapisany model i renderuj epizody (bez treningu).")
-@click.option("--resume", metavar="MODEL.keras", default=None, help="Wznow trening z zapisanego checkpointu.")
+@click.option(
+    "--env",
+    type=click.Choice(["cartpole", "lunar"]),
+    default="cartpole",
+    show_default=True,
+    help="Srodowisko do treningu.",
+)
+@click.option(
+    "--render",
+    metavar="MODEL.keras",
+    default=None,
+    help="Wczytaj zapisany model i renderuj epizody (bez treningu).",
+)
+@click.option(
+    "--resume",
+    metavar="MODEL.keras",
+    default=None,
+    help="Wznow trening z zapisanego checkpointu.",
+)
 def main(env: str, render: str | None, resume: str | None) -> None:
     if render:
         render_model(render, env_name=env)

@@ -10,16 +10,19 @@ from . import Action, Driver, State, available_actions
 
 ALMOST_INFINITE_STEP = 1000000
 
+
 class OffPolicyNStepSarsaDriver(Driver):
-    def __init__(self, 
-                step_size: float,
-                step_no: int, 
-                experiment_rate: float, 
-                discount_factor: float,
-                max_learning_steps: int = 500,
-                use_speeding_policy: bool = False,
-                speeding_rate: float = 0.2,
-                use_importance_sampling: bool = True) -> None:
+    def __init__(
+        self,
+        step_size: float,
+        step_no: int,
+        experiment_rate: float,
+        discount_factor: float,
+        max_learning_steps: int = 500,
+        use_speeding_policy: bool = False,
+        speeding_rate: float = 0.2,
+        use_importance_sampling: bool = True,
+    ) -> None:
         self.step_size: float = step_size
         self.step_no: int = step_no
         self.experiment_rate: float = experiment_rate
@@ -48,7 +51,11 @@ class OffPolicyNStepSarsaDriver(Driver):
         self.current_step = 0
         self.states[self._access_index(self.current_step)] = state
 
-        policy = self.speeding_policy if self.use_speeding_policy else self.epsilon_greedy_policy
+        policy = (
+            self.speeding_policy
+            if self.use_speeding_policy
+            else self.epsilon_greedy_policy
+        )
 
         action = self._select_action(policy(state, available_actions(state)))
         self.actions[self._access_index(self.current_step)] = action
@@ -61,11 +68,15 @@ class OffPolicyNStepSarsaDriver(Driver):
             self.rewards[self._access_index(self.current_step + 1)] = last_reward
             self.states[self._access_index(self.current_step + 1)] = state
             if self.final_step == ALMOST_INFINITE_STEP and (
-                    last_reward == 0 or self.current_step == self.max_learning_steps
+                last_reward == 0 or self.current_step == self.max_learning_steps
             ):
                 self.final_step = self.current_step + 1
 
-            policy = self.speeding_policy if self.use_speeding_policy else self.epsilon_greedy_policy
+            policy = (
+                self.speeding_policy
+                if self.use_speeding_policy
+                else self.epsilon_greedy_policy
+            )
             action = self._select_action(policy(state, available_actions(state)))
             self.actions[self._access_index(self.current_step + 1)] = action
         else:
@@ -82,7 +93,11 @@ class OffPolicyNStepSarsaDriver(Driver):
             state_t = self.states[self._access_index(update_step)]
             action_t = self.actions[self._access_index(update_step)]
             # TODO: Tutaj trzeba zaktualizować tablicę wartościującą akcje Q
-            self.q[state_t, action_t] += self.step_size * return_value_weight * (return_value - self.q[state_t, action_t])
+            self.q[state_t, action_t] += (
+                self.step_size
+                * return_value_weight
+                * (return_value - self.q[state_t, action_t])
+            )
 
         if update_step == self.final_step - 1:
             self.finished = True
@@ -93,22 +108,32 @@ class OffPolicyNStepSarsaDriver(Driver):
     def _return_value(self, update_step):
         return_value = 0.0
         # TODO: Tutaj trzeba policzyć zwrot G
-        for i in range(update_step + 1, min(update_step + self.step_no, self.final_step) + 1):
-            return_value += (self.discount_factor ** (i - update_step - 1)) * self.rewards[self._access_index(i)]
+        for i in range(
+            update_step + 1, min(update_step + self.step_no, self.final_step) + 1
+        ):
+            return_value += (
+                self.discount_factor ** (i - update_step - 1)
+            ) * self.rewards[self._access_index(i)]
 
         if update_step + self.step_no < self.final_step:
             state = self.states[self._access_index(update_step + self.step_no)]
             action = self.actions[self._access_index(update_step + self.step_no)]
-            return_value += (self.discount_factor ** self.step_no) * self.q[state, action] 
+            return_value += (self.discount_factor**self.step_no) * self.q[state, action]
 
         return return_value
 
     def _return_value_weight(self, update_step):
         return_value_weight = 1.0
         # TODO: Tutaj trzeba policzyć korektę na różne prawdopodobieństwa ρ (ponieważ uczymy poza-polityką)
-        for i in range(update_step + 1, min(update_step + self.step_no, self.final_step - 1) + 1):
+        for i in range(
+            update_step + 1, min(update_step + self.step_no, self.final_step - 1) + 1
+        ):
             state = self.states[self._access_index(i)]
-            behpolicy = self.speeding_policy if self.use_speeding_policy else self.epsilon_greedy_policy
+            behpolicy = (
+                self.speeding_policy
+                if self.use_speeding_policy
+                else self.epsilon_greedy_policy
+            )
             behaviour_policy = behpolicy(state, available_actions(state))
             target_policy = self.greedy_policy(state, available_actions(state))
             action = self.actions[self._access_index(i)]
@@ -129,21 +154,23 @@ class OffPolicyNStepSarsaDriver(Driver):
         i = np.random.choice(list(range(len(actions))), p=probabilities)
         return actions[i]
 
-    def epsilon_greedy_policy(self, state: State, actions: list[Action]) -> dict[Action, float]:
+    def epsilon_greedy_policy(
+        self, state: State, actions: list[Action]
+    ) -> dict[Action, float]:
         # TODO: tutaj trzeba ustalic prawdopodobieństwa wyboru akcji według polityki ε-zachłannej
         greedy = self._greedy_probabilities(state, actions)
         random_policy = self._random_probabilities(actions)
 
         probabilities = (
-            (1 - self.experiment_rate) * greedy +
-            random_policy * self.experiment_rate 
-        )
+            1 - self.experiment_rate
+        ) * greedy + random_policy * self.experiment_rate
         return {
-            action: probability 
-            for action, probability in zip(actions, probabilities)
+            action: probability for action, probability in zip(actions, probabilities)
         }
-    
-    def speeding_policy(self, state: State, actions: list[Action]) -> dict[Action, float]:
+
+    def speeding_policy(
+        self, state: State, actions: list[Action]
+    ) -> dict[Action, float]:
         greedy = self._greedy_probabilities(state, actions)
         random_policy = self._random_probabilities(actions)
         speeding = self._speeding_probabilities(actions)
@@ -157,19 +184,20 @@ class OffPolicyNStepSarsaDriver(Driver):
         probabilities = self._normalise(probabilities)
 
         return {
-            action: probability
-            for action, probability in zip(actions, probabilities)
+            action: probability for action, probability in zip(actions, probabilities)
         }
 
     def greedy_policy(self, state: State, actions: list[Action]) -> dict[Action, float]:
         probabilities = self._greedy_probabilities(state, actions)
-        return {action: probability for action, probability in zip(actions, probabilities)}
+        return {
+            action: probability for action, probability in zip(actions, probabilities)
+        }
 
     def _greedy_probabilities(self, state: State, actions: list[Action]) -> np.ndarray:
         values = np.array([self.q[state, action] for action in actions])
         maximal_spots = (values == np.max(values)).astype(float)
         return self._normalise(maximal_spots)
-    
+
     def _speeding_probabilities(self, actions: list[Action]) -> np.ndarray:
         accelerations_x = np.array([action.a_x for action in actions])
         max_acceleration_x = np.max(accelerations_x)
@@ -185,8 +213,8 @@ class OffPolicyNStepSarsaDriver(Driver):
 
     @staticmethod
     def _normalise(probabilities: np.ndarray) -> np.ndarray:
-        return skl_preprocessing.normalize(probabilities.reshape(1, -1), norm='l1')[0]
-    
+        return skl_preprocessing.normalize(probabilities.reshape(1, -1), norm="l1")[0]
+
     def eval_mode(self) -> None:
         self.backup_experiment_rate = self.experiment_rate
         self.backup_step_size = self.step_size
@@ -198,16 +226,11 @@ class OffPolicyNStepSarsaDriver(Driver):
         self.step_size = 0.0
         self.use_speeding_policy = False
 
-
     def train_mode(self) -> None:
         self.experiment_rate = self.backup_experiment_rate
         self.step_size = self.backup_step_size
         self.speeding_rate = self.backup_speeding_rate
         self.use_speeding_policy = self.backup_use_speeding_policy
-        
-    def train_mode(self) -> None:
-        self.experiment_rate = self.backup_experiment_rate
-        self.step_size = self.backup_step_size
 
     def save(self, path: str) -> None:
         path = Path(path)
