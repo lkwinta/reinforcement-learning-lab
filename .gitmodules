@@ -1,3 +1,3 @@
 [submodule "decision_transformer/nanoDT"]
 	path = decision_transformer/nanoDT
-	url = https://github.com/lkwinta/nanoDT/
+	url = https://github.com/lubiluk/nanoDT
