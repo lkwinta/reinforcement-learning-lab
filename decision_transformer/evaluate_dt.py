@@ -1,3 +1,5 @@
+import argparse
+
 import numpy as np
 from nanodt.agent import NanoDTAgent
 import gymnasium as gym
@@ -5,9 +7,11 @@ import torch
 from tqdm.rich import tqdm
 
 
-def evaluate():
+def evaluate(dt_path: str):
     env = gym.make("LunarLander-v3")
-    agent = NanoDTAgent.load("output/dt/minari-LunarLander-v3-expert-v0.pth")
+    agent = NanoDTAgent.load(
+        dt_path, device="cuda" if torch.cuda.is_available() else "cpu"
+    )
 
     rewards = []
 
@@ -27,11 +31,15 @@ def evaluate():
             prev_rew = torch.tensor(rew)  # Initialize prev_rew with the first reward
 
         rewards.append(accumulated_rew)
-        print("Accumulated rew: ", accumulated_rew)
+        # print("Accumulated rew: ", accumulated_rew)
         # print("Success: ", info["is_success"])
 
-    print("Average reward over 1000 episodes: ", np.mean(rewards))
+    print(f"{dt_path}: Average reward over 1000 episodes: {np.mean(rewards)}")
 
 
 if __name__ == "__main__":
-    evaluate()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dt-path", type=str, required=True)
+    args = parser.parse_args()
+
+    evaluate(args.dt_path)

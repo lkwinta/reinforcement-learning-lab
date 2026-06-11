@@ -1,12 +1,14 @@
+import argparse
+
 import numpy as np
 import gymnasium as gym
 from stable_baselines3 import DQN
 from tqdm.rich import tqdm
 
 
-def evaluate():
+def evaluate(expert_path: str):
     env = gym.make("LunarLander-v3")
-    agent = DQN.load("logs/dqn/LunarLander-v3_1/LunarLander-v3.zip")
+    agent = DQN.load(expert_path)
 
     rewards = []
 
@@ -15,17 +17,21 @@ def evaluate():
         done = False
         accumulated_rew = 0
         while not done:
-            action, _ = agent.predict(obs)
+            action, _ = agent.predict(obs, deterministic=True)
             obs, rew, ter, tru, info = env.step(action)
             done = ter or tru
             accumulated_rew += rew
 
         rewards.append(accumulated_rew)
-        print("Accumulated rew: ", accumulated_rew)
+        # print("Accumulated rew: ", accumulated_rew)
         # print("Success: ", info["is_success"])
 
-    print("Average reward over 1000 episodes: ", np.mean(rewards))
+    print(f"{expert_path}: Average reward over 1000 episodes: {np.mean(rewards)}")
 
 
 if __name__ == "__main__":
-    evaluate()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--expert-path", type=str, required=True)
+    args = parser.parse_args()
+
+    evaluate(args.expert_path)

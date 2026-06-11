@@ -1,3 +1,5 @@
+import argparse
+
 import gymnasium as gym
 import numpy as np
 import torch
@@ -25,9 +27,12 @@ class PolicyNetwork(nn.Module):
             return torch.argmax(self(observation), axis=-1)
 
 
-def evaluate():
+def evaluate(model_path: str):
     policy_net = PolicyNetwork(obs_dim=8, act_dim=4)
-    policy_net.load_state_dict(torch.load("output/bc/policy_net.pth"))
+    policy_net.load_state_dict(torch.load(model_path))
+
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    policy_net.to(device)
     policy_net.eval()
 
     env = gym.make("LunarLander-v3")
@@ -39,19 +44,25 @@ def evaluate():
         done = False
         accumulated_rew = 0
         while not done:
-            obs_tensor = torch.as_tensor(obs, dtype=torch.float32).unsqueeze(0)
+            obs_tensor = torch.as_tensor(
+                obs, dtype=torch.float32, device=device
+            ).unsqueeze(0)
             action = policy_net.act(obs_tensor)
-            obs, rew, ter, tru, _ = env.step(action.item())
+            obs, rew, ter, tru, _ = env.step(action.cpu().item())
             done = ter or tru
             accumulated_rew += rew
 
         rewards.append(accumulated_rew)
-        print("Accumulated rew: ", accumulated_rew)
+        # print("Accumulated rew: ", accumulated_rew)
 
-    print("Average reward over 1000 episodes: ", np.mean(rewards))
+    print(f"{model_path}: Average reward over 1000 episodes: {np.mean(rewards)}")
 
     env.close()
 
 
 if __name__ == "__main__":
-    evaluate()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model-path", type=str, default="output/bc/policy_net.pth")
+    args = parser.parse_args()
+
+    evaluate(args.model_path)

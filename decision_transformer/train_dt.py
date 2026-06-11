@@ -2,6 +2,7 @@ import os
 
 import minari
 import torch
+import argparse
 
 
 from nanodt.agent import NanoDTAgent
@@ -17,12 +18,11 @@ def get_device():
         return "cpu"
 
 
-def train_dt():
+def train_dt(dataset_name: str):
     seed = 1234
     seed_libraries(seed)
 
-    dataset_name = "LunarLander-v3-expert-v0"
-    save_path = f"output/dt/minari-{dataset_name}.pth"
+    save_path = f"output/dt/minari-{dataset_name}-dt.pth"
 
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
@@ -46,4 +46,8 @@ def train_dt():
 
 
 if __name__ == "__main__":
-    train_dt()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dataset-name", type=str, required=True)
+    args = parser.parse_args()
+
+    train_dt(args.dataset_name)

@@ -1,4 +1,5 @@
 import os
+import argparse
 
 import minari
 import torch
@@ -53,7 +54,7 @@ def collate_fn(batch):
     }
 
 
-def train_bc():
+def train_bc(dataset_name: str):
     if torch.cuda.is_available():
         device = torch.device("cuda")
     elif torch.backends.mps.is_available():
@@ -61,7 +62,7 @@ def train_bc():
     else:
         device = torch.device("cpu")
 
-    minari_dataset = minari.load_dataset("LunarLander-v3-expert-v0")
+    minari_dataset = minari.load_dataset(dataset_name)
     dataloader = DataLoader(
         minari_dataset, batch_size=256, shuffle=True, collate_fn=collate_fn
     )
@@ -82,7 +83,7 @@ def train_bc():
     optimizer = torch.optim.Adam(policy_net.parameters())
     loss_fn = nn.CrossEntropyLoss(ignore_index=-100).to(device)
 
-    num_epochs = 32
+    num_epochs = 100
 
     for epoch in tqdm(range(num_epochs)):
         for batch in tqdm(dataloader, desc=f"Epoch {epoch}/{num_epochs}"):
@@ -107,8 +108,12 @@ def train_bc():
     policy_net.cpu()
 
     os.makedirs("output/bc", exist_ok=True)
-    torch.save(policy_net.state_dict(), "output/bc/policy_net.pth")
+    torch.save(policy_net.state_dict(), f"output/bc/{dataset_name}_policy_net.pth")
 
 
 if __name__ == "__main__":
-    train_bc()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dataset-name", type=str, required=True)
+    args = parser.parse_args()
+
+    train_bc(args.dataset_name)
