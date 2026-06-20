@@ -38,7 +38,11 @@ dependencies = [
     "tensorboard==2.19.0",
     "setuptools<80",
     "plotly",
-    "kaleido"
+    "kaleido",
+    "transformers",
+    "peft",
+    "trl",
+    "wordfreq"
 ]
 
 [dependency-groups]
