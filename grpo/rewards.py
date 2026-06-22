@@ -1,14 +1,56 @@
 import re
 from vocab import load_vocab, vocab_fraction
 
-VOCAB = load_vocab()
+VOCAB = load_vocab(n=130) - set(
+    [
+        "that",
+        "the",
+        "would",
+        "be",
+        "are",
+        "is",
+        "a",
+        "an",
+        "and",
+        "of",
+        "to",
+        "in",
+        "for",
+        "on",
+        "with",
+        "as",
+        "by",
+        "at",
+        "from",
+        "i",
+        "1",
+    ]
+)
+
+print(VOCAB)
 
 
 def reward_vocab(
     completions: list[str],
     **kwargs,
 ) -> list[float]:
-    return [vocab_fraction(c, VOCAB) * 0.4 for c in completions]
+    scores = []
+
+    for completion in completions:
+        tokens = re.findall(r"[a-z]+", completion.lower())
+        length = len(tokens)
+
+        vocab_score = vocab_fraction(completion, VOCAB) * 0.3
+
+        if length == 0:
+            brevity_score = 0.0
+        else:
+            brevity_score = min(1.0, 10 / length) * 0.2
+
+        score = vocab_score + brevity_score
+        scores.append(score)
+
+    return scores
 
 
 def _normalise(text: str) -> str:

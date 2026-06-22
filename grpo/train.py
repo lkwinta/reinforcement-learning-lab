@@ -22,9 +22,7 @@ def next_run_dir(suffix: str) -> str:
     existing_numbers = [
         int(d[:6])
         for d in os.listdir(RUNS_BASE)
-        if os.path.isdir(os.path.join(RUNS_BASE, d))
-        and len(d) >= 6
-        and d[:6].isdigit()
+        if os.path.isdir(os.path.join(RUNS_BASE, d)) and len(d) >= 6 and d[:6].isdigit()
     ]
     next_n = max(existing_numbers, default=0) + 1
     return os.path.join(RUNS_BASE, f"{next_n:06d}_{suffix}")
@@ -51,6 +49,15 @@ class ConversationLoggerCallback(TrainerCallback):
         "Why is the sky blue?",
         "What is 17 multiplied by 6?",
         "Who wrote Romeo and Juliet?",
+        "What is the chemical formula for water?",
+        "How many continents are there on Earth?",
+        "What is the largest mammal?",
+        "What is the speed of light?",
+        "Who painted the Mona Lisa?",
+        "What is the tallest mountain in the world?",
+        "What is the smallest prime number?",
+        "What is the boiling point of water at sea level in Celsius?",
+        "Who is the current president of the United States?",
     ]
 
     def __init__(
@@ -101,16 +108,18 @@ class ConversationLoggerCallback(TrainerCallback):
                 )
 
             response = self.tokenizer.decode(
-                out[0][input_ids.shape[1]:], skip_special_tokens=True
+                out[0][input_ids.shape[1] :], skip_special_tokens=True
             ).strip()
             score = vocab_fraction(response, self.vocab)
             scores.append(score)
-            records.append({
-                "step": state.global_step,
-                "question": question,
-                "response": response,
-                "vocab_score": round(score, 3),
-            })
+            records.append(
+                {
+                    "step": state.global_step,
+                    "question": question,
+                    "response": response,
+                    "vocab_score": round(score, 3),
+                }
+            )
 
         if was_training:
             model.train()
@@ -127,7 +136,9 @@ class ConversationLoggerCallback(TrainerCallback):
                 self.tb_writer.add_scalar(f"vocab/probe_{i}", s, state.global_step)
             self.tb_writer.flush()
 
-        print(f"\n[step {state.global_step}] vocab probe mean: {sum(scores)/len(scores):.3f}")
+        print(
+            f"\n[step {state.global_step}] vocab probe mean: {sum(scores) / len(scores):.3f}"
+        )
 
     def on_train_end(self, args, state, control, **kwargs):
         if self.tb_writer:
@@ -248,9 +259,17 @@ def main():
         "resumed_from": args.resume,
         "n_train": n_train,
         "lora": lora_params,
-        "grpo": {k: v for k, v in grpo_params.items()
-                 if k not in ("report_to", "dataloader_num_workers",
-                              "log_completions", "num_completions_to_print")},
+        "grpo": {
+            k: v
+            for k, v in grpo_params.items()
+            if k
+            not in (
+                "report_to",
+                "dataloader_num_workers",
+                "log_completions",
+                "num_completions_to_print",
+            )
+        },
     }
     run_dir = setup_run(suffix, config)
 
@@ -262,7 +281,9 @@ def main():
         dtype=dtype,
         device_map=device_map,
     )
-    print(f"  dtype={next(model.parameters()).dtype}  device={next(model.parameters()).device}\n")
+    print(
+        f"  dtype={next(model.parameters()).dtype}  device={next(model.parameters()).device}\n"
+    )
 
     dataset = build_dataset(tokenizer, n_train=n_train)
 
@@ -270,8 +291,13 @@ def main():
         r=lora_params["r"],
         lora_alpha=lora_params["lora_alpha"],
         target_modules=[
-            "q_proj", "k_proj", "v_proj", "o_proj",
-            "gate_proj", "up_proj", "down_proj",
+            "q_proj",
+            "k_proj",
+            "v_proj",
+            "o_proj",
+            "gate_proj",
+            "up_proj",
+            "down_proj",
         ],
         lora_dropout=lora_params["lora_dropout"],
         bias="none",
